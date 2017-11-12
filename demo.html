@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html onselectstart="return false">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        li {
+            list-style: none;
+        }
+
+        body {
+            background: #000;
+        }
+
+        #wrap {
+            width: 300px;
+            height: 500px;
+            border: 10px solid #fff;
+            margin: 50px auto;
+        }
+
+        #box {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #box h1 {
+            color: #fff;
+            padding: 30px;
+            text-align: center;
+        }
+
+        #box .pattern {
+            width: 150px;
+            height: 30px;
+            font-size: 14px;
+            text-align: center;
+            line-height: 30px;
+            background: #fff;
+            margin: 55px auto;
+            cursor: pointer;
+        }
+
+        #box .pattern.wind {
+            font-weight: bold;
+            color: red;
+            background: lightblue;
+        }
+
+        #box .plane,
+        #box .biu,
+        #box .enemy,
+        #box .boom {
+            position: absolute;
+        }
+
+        #box .score {
+            position: absolute;
+            top: 0;
+            left: 0;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        #box .GG {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: auto;
+            width: 200px;
+            height: 400px;
+            background: #fff;
+        }
+
+        #box .hh1 {
+            color: #000;
+            font-weight: bold;
+            font-size: 34px;
+            text-align: center;
+        }
+
+        #box .hh2 {
+            color: #000;
+            font-weight: bold;
+            font-size: 20px;
+            padding-left: 45px;
+            display: inline-block;
+        }
+
+        #box .span1 {
+            height: 30px;
+            line-height: 30px;
+            color: red;
+            font-weight: bold;
+            font-size: 30px;
+            display: inline-block;
+        }
+
+        #box .again {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            width: 100px;
+            height: 30px;
+            margin-left: -50px;
+            background: #000;
+            color: red;
+            font-weight: bold;
+            text-align: center;
+            line-height: 30px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="wrap">
+        <div id="box"></div>
+    </div>
+
+    <script>
+        (function () {
+            var box = document.getElementById('box');
+
+            init();
+            //初始化界面函数
+            function init() {
+                var H1 = document.createElement('h1');
+                H1.innerHTML = '飞机大战v1.0';
+                box.appendChild(H1);
+
+                var arrInit = ['简单', '一般', '困难', '风的力量'];
+                for (var i = 0; i < 4; i++) {
+                    var Div = document.createElement('div');
+                    Div.innerHTML = arrInit[i];
+                    Div.className = i === 3 ? 'pattern wind' : 'pattern';
+                    Div.i = i;
+                    Div.onclick = function (e) {
+                        start(this.i, e);
+                    }
+                    box.appendChild(Div);
+                }
+            }
+
+            //开始界面
+            function start(index, e) {
+                //清空初始化的界面
+                box.innerHTML = '';
+                //myPalne(index, e) 生成我方战机
+                enemy(index, myPalne(index, e));//生成敌方战机
+                score();//执行计分板
+            }
+
+            //生成我方飞机和子弹
+            function myPalne(index, e) {
+                var plane = new Image();
+                plane.src = 'img/plane.png';
+                plane.width = 60;
+                plane.height = 36;
+                plane.className = 'plane';
+                plane.style.top = e.pageY - getoffset(box).top - plane.height / 2 + 'px';
+                plane.style.left = e.pageX - getoffset(box).left - plane.width / 2 + 'px';
+                box.appendChild(plane);
+
+                var leftMin, leftMax, topMin, topMax;
+                leftMin = -plane.width / 2;
+                leftMax = box.offsetWidth - plane.width / 2;
+                topMin = 0;
+                topMax = box.offsetHeight - plane.height;
+
+                document.onmousemove = function (e) {
+                    var left = e.pageX - getoffset(box).left - plane.width / 2,
+                        top = e.pageY - getoffset(box).top - plane.height / 2;
+                    //限定我军的活动范围（边界）
+                    left = Math.min(leftMax, left);//每次移动就进行一次比较
+                    left = Math.max(leftMin, left);
+                    top = Math.min(topMax, top);
+                    top = Math.max(topMin, top);
+
+                    plane.style.top = top + 'px';
+                    plane.style.left = left + 'px';
+                }
+
+                //生成子弹
+
+                //把不同模式的子弹的速度存起来
+                var biuSpeed = ["100", "200", "300", "20"];
+                //用定时器来批量生成子弹（因为需要很多的子弹）
+                setInterval(function () {
+                    var Biu = new Image();
+                    Biu.src = 'img/bullet.png';
+                    Biu.width = 6;
+                    Biu.height = 22; 
+                    Biu.className = 'biu';
+                    Biu.style.top = plane.offsetTop + 'px';
+                    Biu.style.left = plane.offsetLeft + plane.width / 2 - Biu.width / 2 + 'px';
+                    box.appendChild(Biu);
+
+                    mq();
+                    function mq() {
+                        //每次执行就改变top 向上运动 12px
+                        Biu.style.top = Biu.offsetTop - 12 + 'px';
+                        //判断子弹达到边界就删除子弹，避免页面有很多的子弹，切很多定时器，导致页面卡顿
+                        if (Biu.offsetTop <= -Biu.height / 12) {
+                            box.removeChild(Biu);
+                        } else {
+                            //子弹的父级存在，则循环执行动画，不存在就不执行。因此不需要用cancel清除了
+                            Biu.parentNode && requestAnimationFrame(mq); 
+                        }
+                    }
+
+                }, biuSpeed[index]);
+                return plane;
+            }
+
+            //生成敌军
+            function enemy(index, plane) {
+                var arrEnemy = [300, 200, 100, 50];//敌军生成的速度
+                box.timer = setInterval(function () {
+                    var enemy = new Image();
+                    enemy.src = 'img/enemy.png';
+                    enemy.className = 'enemy';
+                    enemy.width = 23;
+                    enemy.height = 30;
+                    enemy.style.top = 0;
+                    enemy.style.left = Math.random() * box.offsetWidth - enemy.width / 2 + 'px';
+
+                    box.appendChild(enemy);
+
+                    //控制敌机下落
+                    var speed = Math.random() * 4 + 1;
+                    eSpeed();
+                    function eSpeed() {
+                        var aBiu = document.getElementsByClassName('biu');
+                        enemy.style.top = enemy.offsetTop + speed + 'px';
+                        if (enemy.offsetTop >= box.offsetHeight - enemy.height / 2) {
+                            box.removeChild(enemy);
+                        } else {
+                            //敌机跟子弹检测
+                            for (var i = 0; i < aBiu.length; i++) {
+                                if (collide(enemy, aBiu[i])) {
+                                    box.removeChild(aBiu[i]);
+                                    creatBoom(enemy, "");
+                                    document.getElementsByClassName('score')[0].innerHTML = box.score+=10;
+                                    //cancelAnimationFrame(enemy.timer);
+                                    box.removeChild(enemy);
+                                    return;
+                                    //console.log(score)
+                                }
+                            }
+                            //敌机跟我方飞机检测
+                            if (plane.parentNode && collide(enemy, plane)) {
+                                //飞机炸了，此时关掉定时器,还要消除制造子弹的函数和生成飞机的函数，移动事件也不需要了
+                                clearInterval(plane.timer);
+                                clearInterval(box.timer);
+                                document.onmousemove = null;
+                                creatBoom(plane, "2");
+                                box.removeChild(enemy);
+                                box.removeChild(plane);
+
+                                setTimeout(GG, 1000);
+
+                                return;
+                            }
+                            enemy.parentNode && requestAnimationFrame(eSpeed);
+                        }
+                    }
+                }, arrEnemy[index]);
+            }
+
+            //碰撞函数
+            function collide(obj1, obj2) {//敌机and子弹
+                //预存敌机和子弹的四个方向的值
+                var L1 = obj1.offsetLeft,
+                    T1 = obj1.offsetTop,
+                    R1 = L1 + obj1.offsetWidth,
+                    B1 = T1 + obj1.offsetHeight;
+                var L2 = obj2.offsetLeft,
+                    T2 = obj2.offsetTop,
+                    R2 = L2 + obj2.offsetWidth,
+                    B2 = T2 + obj2.offsetHeight;
+
+                return !(L1 > R2 || R1 < L2 || B1 < T2 || T1 > B2); //这四种情况是没有碰撞的。子弹和敌机没有相碰,则返回假
+            }
+
+            //生成爆炸图片
+            function creatBoom(obj, s) {
+                var boom = new Image();
+                boom.src = 'img/boom' + s + '.png';
+                boom.className = 'boom';
+                boom.width = obj.width;
+                boom.height = obj.height;
+                boom.style.top = obj.offsetTop + 'px';
+                boom.style.left = obj.offsetLeft + 'px';
+                box.appendChild(boom);
+                setTimeout(function() {
+                    box.removeChild(boom);
+                }, 100);
+            }
+
+            //积分
+            function score() {
+                box.score = 0;
+                var span = document.createElement('span');
+                span.className = "score";
+                span.innerHTML = box.score;
+                box.appendChild(span);
+            }
+
+            //游戏结束函数
+            function GG() {
+                box.innerHTML = '';
+                var Div = document.createElement('div');
+                Div.className = 'GG';
+                var h1 = document.createElement('h1'),
+                    h2 = document.createElement('h2'),
+                    span1 = document.createElement('span'),
+                    Div1 = document.createElement('div');
+
+                h1.innerHTML = '游戏结束';
+                h1.className = 'hh1';
+
+                h2.innerHTML = '积分：'
+                h2.className = 'hh2';
+
+                span1.innerHTML = box.score;
+                span1.className = 'span1';
+
+                Div1.innerHTML = '再玩一次';
+                Div1.className = 'again';
+                Div1.onclick = function() {
+                    box.innerHTML = '';
+                    init();
+                }
+
+                Div.appendChild(h1);
+                Div.appendChild(h2);
+                Div.appendChild(span1);
+                Div.appendChild(Div1);
+
+                box.appendChild(Div);
+            }
+
+            //获取盒子到document的距离
+            function getoffset(obj) {
+                var json = {
+                    left: 0,
+                    top: 0
+                }
+                while (obj !== document.body) {
+                    json.left += obj.offsetLeft;
+                    json.top += obj.offsetTop;
+                    obj = obj.offsetParent;
+                }
+                return json;
+            }
+        })();
+    </script>
+</body>
+
+</html>
